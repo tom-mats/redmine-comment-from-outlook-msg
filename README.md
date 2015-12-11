@@ -1,5 +1,10 @@
 # redmine-comment-from-outlook-msg
 
+## Purpose
+
+* Insert mail message from msg(Outlook)/eml file to description/comments
+
+## Procedures
 Use the following hook
 
 * :controller_issues_new_before_save
