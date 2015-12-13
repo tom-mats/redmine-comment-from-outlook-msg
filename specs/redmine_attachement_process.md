@@ -42,3 +42,7 @@ def save_attachments(attachments, author=User.current)
   {:files => saved_attachments, :unsaved => unsaved_attachments}
 end
 ```
+
+## Questions
+
+* Does it require Attachment class to read file or get actual filename?
