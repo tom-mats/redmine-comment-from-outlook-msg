@@ -13,7 +13,7 @@ module CommentFromeOutlookMsg
     if attachment.is_a?(Array) && attachment.size > 1
       hash_data = attachment[1]
       a = Attachment.find_by_token(hash_data[:token]) if hash_data.has_key? :token
-      if a && a.diskfile File.exist?(a.diskfile)
+      if a && a.diskfile && File.exist?(a.diskfile)
         if File.extname(a.diskfile) == ".msg"
           mime = Mapi.Msg.open(a.diskfile).to_mime
           sender = mine.headers["From"][0].split("<")[0] if mime.headers.has_key? "From"
