@@ -2,6 +2,12 @@ require 'ruby-msg'
 
 module CommentFromeOutlookMsg
   MAX_MIME_LINE = 72
+  HEADER_CONTENTS = [
+    "To",
+    "Cc",
+    "Subject",
+    "Date"
+  ]
   def self.parse_mail(attachment)
     mail_message = []
     if attachment.is_a?(Array) && attachment.size > 1
@@ -12,10 +18,9 @@ module CommentFromeOutlookMsg
           mime = Mapi.Msg.open(a.diskfile).to_mime
           sender = mine.headers["From"][0].split("<")[0] if mime.headers.has_key? "From"
           mail_message << "From : #{sender}" if sender
-          mail_message << "To   : #{mime.headers["To"]}" if mime.headers.has_key? "To"
-          mail_message << "Cc   : #{mime.headers["Cc"]}" if mime.headers.has_key? "Cc"
-          mail_message << "Title: #{mime.headers["Subject"]}" if mime.headers.has_key? "Subject"
-          mail_message << "Date : #{mime.headers["Date"]}" if mime.headers.has_key? "Date"
+          HEADER_CONTENTS.each do |item|
+            mail_message << "#{item}: #{mime.headers["item"]}" if mime.headers.has_key? item
+          end
           actual_line = ""
           msg.properties.body.split("\n").each do |line|
             break if line =~ /^-+$/
