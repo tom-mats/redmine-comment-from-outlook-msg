@@ -4,7 +4,7 @@ module CommentFromeOutlookMsg
   MAX_MIME_LINE = 72
   def self.parse_mail(attachment)
     mail_message = []
-    if attachment.size > 1
+    if attachment.is_a?(Array) && attachment.size > 1
       hash_data = attachment[1]
       a = Attachment.find_by_token(hash_data[:token]) if hash_data.has_key? :token
       if a && a.diskfile File.exist?(a.diskfile)
