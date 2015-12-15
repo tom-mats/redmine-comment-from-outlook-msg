@@ -1,4 +1,4 @@
-require 'ruby-msg'
+require 'mapi/msg'
 
 module CommentFromeOutlookMsg
   MAX_MIME_LINE = 72
@@ -28,7 +28,6 @@ module CommentFromeOutlookMsg
             next if line.length > MAX_MIME_LINE
             mail_message << actual_line
             actual_line = ""
-            end
           end
         end
       end
