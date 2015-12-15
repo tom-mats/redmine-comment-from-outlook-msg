@@ -19,7 +19,7 @@ module CommentFromeOutlookMsg
           sender = mine.headers["From"][0].split("<")[0] if mime.headers.has_key? "From"
           mail_message << "From : #{sender}" if sender
           HEADER_CONTENTS.each do |item|
-            mail_message << "#{item}: #{mime.headers["item"]}" if mime.headers.has_key? item
+            mail_message << "#{item}: #{mime.headers[item]}" if mime.headers.has_key? item
           end
           actual_line = ""
           msg.properties.body.split("\n").each do |line|
