@@ -1,34 +1,48 @@
 require 'mapi/msg'
 
-module CommentFromeOutlookMsg
+module CommentFromOutlookMsg
   MAX_MIME_LINE = 72
-  HEADER_CONTENTS = [
-    "To",
-    "Cc",
-    "Subject",
-    "Date"
-  ]
+  HEADER_CONTENTS = {
+    "From" => /<([A-Za-z0-9.]+@[A-Za-z0-9.]+)>/,
+    "To" => /<([A-Za-z0-9.]+@[A-Za-z0-9.]+)>/,
+    "Cc" => /<([A-Za-z0-9.]+@[A-Za-z0-9.]+)>/,
+    "Subject" => /(.+)/,
+    "Date" => /(.+)/
+  }
+  def self.logger(log_message)
+    log = Rails.logger
+    log.info(log_message) if log
+  end
   def self.parse_mail(attachment)
     mail_message = []
-    if attachment.is_a?(Array) && attachment.size > 1
-      hash_data = attachment[1]
+    if attachment.is_a?(Hash)
+      hash_data = attachment
       a = Attachment.find_by_token(hash_data[:token]) if hash_data.has_key? :token
       if a && a.diskfile && File.exist?(a.diskfile)
         if File.extname(a.diskfile) == ".msg"
-          mime = Mapi.Msg.open(a.diskfile).to_mime
-          sender = mine.headers["From"][0].split("<")[0] if mime.headers.has_key? "From"
-          mail_message << "From : #{sender}" if sender
-          HEADER_CONTENTS.each do |item|
-            mail_message << "#{item}: #{mime.headers[item]}" if mime.headers.has_key? item
+          msg = Mapi::Msg.open(a.diskfile)
+          mime = msg.to_mime
+          HEADER_CONTENTS.each do |key, regexp|
+            message = []
+            if mime.headers.has_key?(key)
+              message << key + " : "
+              mime.headers[key].each do |header|
+                if header =~ regexp
+                  message << $1
+                end
+              end
+            end
+            mail_message << message.join(",")
           end
           actual_line = ""
           msg.properties.body.split("\n").each do |line|
-            break if line =~ /^-+$/
+            break if line =~ /^>+(-|\s|_)+$/
             actual_line += line.chomp
             next if line.length > MAX_MIME_LINE
             mail_message << actual_line
             actual_line = ""
           end
+          msg.close
         end
       end
     end
@@ -38,27 +52,29 @@ module CommentFromeOutlookMsg
       nil
     end
   end
-  def self.add_message_from_mail(params, key)
+  def self.add_message_from_mail(params)
     additional_message = []
     if params.key? :attachments
-      if params[:attachments].is_a?(Array)
-        params[:attachments].each do |attachment|
+      if params[:attachments].is_a?(Hash)
+        params[:attachments].each do |key, attachment|
           additional_message << parse_mail(attachment)
         end
       end
     end
     additional_message.compact!
-    unless additional_message.empty?
-      params[key] = params[key].to_s + "---\n" + additional_message.join("---\n")
+    if additional_message.present?
+      "\n\n---\n\n" + additional_message.join("\n\n---\n\n")
+    else
+      ""
     end
   end
 
   class Hooks < Redmine::Hook::Listener
     def controller_issues_new_before_save(context={})
-      add_message_from_mail(params, :description)
+      context[:issue].description << CommentFromOutlookMsg::add_message_from_mail(context[:params])
     end
     def controller_issues_edit_before_save(context={})
-      add_message_from_mail(params, :notes)
+      context[:issue].notes << CommentFromOutlookMsg::add_message_from_mail(context[:params])
     end
   end
 end
